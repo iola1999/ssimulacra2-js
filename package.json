@@ -1,0 +1,59 @@
+{
+  "name": "ssimulacra2-js",
+  "version": "1.0.0",
+  "description": "ssimulacra2-js",
+  "keywords": [],
+  "main": "dist/bundle.umd.js",
+  "module": "dist/bundle.esm.js",
+  "typings": "dist/types/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "rollup -c -w",
+    "build": "rollup -c",
+    "prettier:check": "yarn prettier --check 'src/**/*.ts'",
+    "prettier:fix": "yarn prettier --write 'src/**/*.ts'",
+    "test": "jest --verbose",
+    "lint": "eslint 'src/**/*.ts'",
+    "lint:fix": "eslint --fix 'src/**/*.ts'",
+    "watch": "yarn tsc -w --noEmit"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "src/**/*.ts": "yarn run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iola1999/ssimulacra2-js"
+  },
+  "author": "iola1999",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/iola1999/ssimulacra2-js/issues"
+  },
+  "homepage": "https://github.com/iola1999/ssimulacra2-js",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.24.0",
+    "@typescript-eslint/parser": "^2.24.0",
+    "eslint": "^6.8.0",
+    "eslint-config-prettier": "^6.10.0",
+    "eslint-plugin-prettier": "^3.1.2",
+    "husky": "^4.2.3",
+    "lint-staged": "8.0.5",
+    "lodash.camelcase": "^4.3.0",
+    "prettier": "^1.19.1",
+    "rollup": "^2.1.0",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-json": "^4.0.0",
+    "rollup-plugin-node-builtins": "^2.1.2",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-sourcemaps": "^0.5.0",
+    "rollup-plugin-typescript2": "^0.26.0",
+    "typescript": "^3.8.3"
+  }
+}
