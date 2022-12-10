@@ -1,5 +1,5 @@
 {
-  "include": ["src"],
+  "include": ["src", "__tests__/*.ts"],
   "compilerOptions": {
     "moduleResolution": "node",
     "target": "ES6",
@@ -9,11 +9,13 @@
     "sourceMap": true,
     "noImplicitAny": true,
     "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "declaration": true,
     "declarationDir": "dist/types",
     "outDir": "dist",
-    "typeRoots": ["node_modules/@types"]
+    "typeRoots": ["node_modules/@types"],
+    "types": ["jest", "node"]
   }
 }
