@@ -1,5 +1,6 @@
 import { Aligned } from "./Aligned";
 import { Matrix3 } from "three";
+import { ImageRgbPlanar } from "./type";
 
 export class RecursiveGaussian {
   radius: number;
@@ -193,11 +194,11 @@ export class Blur {
     return out;
   }
 
-  blur(img: [number[], number[], number[]]) {
+  blur(img: ImageRgbPlanar) {
     return [
       this.blur_plane(img[0]),
       this.blur_plane(img[1]),
       this.blur_plane(img[2]),
-    ];
+    ] as ImageRgbPlanar;
   }
 }

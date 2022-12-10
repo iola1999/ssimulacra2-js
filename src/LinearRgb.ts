@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { ImageInfo } from "./type";
 
 export class LinearRgb {

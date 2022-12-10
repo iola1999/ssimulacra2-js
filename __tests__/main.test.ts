@@ -6,5 +6,6 @@ describe("main test", () => {
       "examples/icon_90q.jpg",
       "examples/icon_30q.jpg"
     );
+    console.log("result", result);
   });
 });
