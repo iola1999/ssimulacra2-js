@@ -136,7 +136,7 @@ function downscale_by_2(_in_data: LinearRgb) {
   }
 
   return new LinearRgb({
-    data: out_data,
+    data: out_data.flat(),
     info: {
       width: out_w,
       height: out_h,
@@ -153,22 +153,16 @@ function make_positive_xyb(xyb: LinearRgb) {
   return xyb;
 }
 
+// 将每个像素的 rgb 分别存到三个数组
 function xyb_to_planar(xyb: LinearRgb) {
-  // TODO 这个逻辑是否一致待确认
-  const out1 = Array(xyb.width * xyb.height).fill(0);
-  const out2 = Array(xyb.width * xyb.height).fill(0);
-  const out3 = Array(xyb.width * xyb.height).fill(0);
-  for (const [i, o1, o2, o3] of xyb.data.map((i) => [
-    i,
-    ...out1,
-    ...out2,
-    ...out3,
-  ])) {
-    o1[0] = i[0];
-    o2[1] = i[1];
-    o3[2] = i[2];
+  const out1 = Array<number>(xyb.width * xyb.height).fill(0);
+  const out2 = Array<number>(xyb.width * xyb.height).fill(0);
+  const out3 = Array<number>(xyb.width * xyb.height).fill(0);
+  for (let index = 0; index < xyb.data.length; index++) {
+    out1[index] = xyb.data[index][0];
+    out2[index] = xyb.data[index][1];
+    out3[index] = xyb.data[index][2];
   }
-
   return [out1, out2, out3] as ImageRgbPlanar;
 }
 

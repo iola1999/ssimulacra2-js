@@ -1,8 +1,10 @@
+import typescript from "@rollup/plugin-typescript";
+
 export default {
   input: `src/index.ts`,
   output: [
     {
-      file: "index.js",
+      file: "dist/index.umd.js",
       name: "ssimulacra2Js",
       format: "umd",
       sourcemap: true,
@@ -14,5 +16,5 @@ export default {
   watch: {
     include: "src/**",
   },
-  plugins: [],
+  plugins: [typescript()],
 };

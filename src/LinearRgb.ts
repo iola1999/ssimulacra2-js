@@ -4,6 +4,7 @@ export class LinearRgb {
   data: Array<[number, number, number]>;
   width: number;
   height: number;
+
   constructor(imageInfo: ImageInfo) {
     const { data, info } = imageInfo;
     if (data.length !== info.width * info.height * 3)
