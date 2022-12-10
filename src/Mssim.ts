@@ -62,5 +62,6 @@ export class Msssim {
     } else {
       ssim = 100.0;
     }
+    return ssim;
   }
 }

@@ -145,26 +145,161 @@ export class RecursiveGaussian {
     }
   }
   horizontal_row(input: number[], output: number[], width: number) {
-    // TODO
+    let big_n = this.radius;
+    let mul_in_1 = this.mul_in.value[0];
+    let mul_in_3 = this.mul_in.value[4];
+    let mul_in_5 = this.mul_in.value[8];
+    let mul_prev_1 = this.mul_prev.value[0];
+    let mul_prev_3 = this.mul_prev.value[4];
+    let mul_prev_5 = this.mul_prev.value[8];
+    let mul_prev2_1 = this.mul_prev2.value[0];
+    let mul_prev2_3 = this.mul_prev2.value[4];
+    let mul_prev2_5 = this.mul_prev2.value[8];
+    let prev_1 = 0;
+    let prev_3 = 0;
+    let prev_5 = 0;
+    let prev2_1 = 0;
+    let prev2_3 = 0;
+    let prev2_5 = 0;
+
+    let n = -big_n + 1;
+    while (n < width) {
+      let left = n - big_n - 1;
+      let right = n + big_n - 1;
+      // SAFETY: `left` can never be bigger than `width`
+      let left_val = left >= 0 ? input[left] : 0;
+      // SAFETY: this branch ensures that `right` is not bigger than `width`
+      let right_val = right < width ? input[right] : 0;
+      let sum = left_val + right_val;
+
+      let out_1 = sum * mul_in_1;
+      let out_3 = sum * mul_in_3;
+      let out_5 = sum * mul_in_5;
+
+      out_1 += mul_prev2_1 * prev2_1;
+      out_3 += mul_prev2_3 * prev2_3;
+      out_5 += mul_prev2_5 * prev2_5;
+      prev2_1 = prev_1;
+      prev2_3 = prev_3;
+      prev2_5 = prev_5;
+
+      out_1 += mul_prev_1 * prev_1;
+      out_3 += mul_prev_3 * prev_3;
+      out_5 += mul_prev_5 * prev_5;
+      prev_1 = out_1;
+      prev_3 = out_3;
+      prev_5 = out_5;
+
+      if (n >= 0) {
+        // SAFETY: We know that this chunk of output is of size `width`,
+        // which `n` cannot be larger than.
+        output[n] = out_1 + out_3 + out_5;
+      }
+
+      n += 1;
+    }
   }
 
   vertical_pass_chunked(
+    J: number,
+    K: number,
     input: number[],
     output: number[],
     width: number,
     height: number
   ) {
-    // TODO
+    if (J <= K) throw new Error("should be J > K");
+    if (K <= 0) throw new Error("should be K > 0");
+    if (input.length !== output.length) {
+      throw new Error("input and output must have the same length");
+    }
+
+    let x = 0;
+    while (x + J <= width) {
+      this.vertical_pass(J, input.slice(x), output.slice(x), width, height);
+      x += J;
+    }
+
+    while (x + K <= width) {
+      this.vertical_pass(K, input.slice(x), output.slice(x), width, height);
+      x += K;
+    }
+
+    while (x < width) {
+      this.vertical_pass(1, input.slice(x), output.slice(x), width, height);
+      x += 1;
+    }
   }
 
   // Apply 1D vertical scan on COLUMNS elements at a time
   vertical_pass(
+    COLUMNS: number,
     input: number[],
     output: number[],
     width: number,
     height: number
   ) {
-    // TODO
+    if (input.length !== output.length) {
+      throw new Error("input and output must have the same length");
+    }
+
+    let big_n = this.radius;
+
+    let zeroes = new Array(COLUMNS).fill(0);
+    let prev = new Array(3 * COLUMNS).fill(0);
+    let prev2 = new Array(3 * COLUMNS).fill(0);
+    let out = new Array(3 * COLUMNS).fill(0);
+
+    let n = -big_n + 1;
+    while (n < height) {
+      const top = n - big_n - 1;
+      const bottom = n + big_n - 1;
+      // TODO 确认此处 ..COLUMNS 逻辑是否正确
+      const top_row =
+        // TODO 确认此处引用 zeroes 逻辑是否正确
+        top >= 0 ? input.slice(top * width, top * width + COLUMNS) : zeroes;
+      const bottom_row =
+        bottom < height
+          ? input.slice(bottom * width, bottom * width + COLUMNS)
+          : zeroes;
+
+      for (let i = 0; i < COLUMNS; i++) {
+        const sum = top_row[i] + bottom_row[i];
+
+        const i1 = i;
+        const i3 = i1 + COLUMNS;
+        const i5 = i3 + COLUMNS;
+
+        const mp1 = this.vert_mul_prev[0];
+        const mp3 = this.vert_mul_prev[1];
+        const mp5 = this.vert_mul_prev[2];
+
+        let out1 = prev[i1] * mp1 + prev2[i1];
+        let out3 = prev[i3] * mp3 + prev2[i3];
+        let out5 = prev[i5] * mp5 + prev2[i5];
+
+        const mi1 = this.vert_mul_in[0];
+        const mi3 = this.vert_mul_in[1];
+        const mi5 = this.vert_mul_in[2];
+
+        out1 = sum * mi1 - out1;
+        out3 = sum * mi3 - out3;
+        out5 = sum * mi5 - out5;
+
+        out[i1] = out1;
+        out[i3] = out3;
+        out[i5] = out5;
+
+        if (n >= 0) {
+          output[n * width + i] = out1 + out3 + out5;
+        }
+      }
+
+      prev2 = [...prev];
+      prev = [...out];
+
+      n++;
+    }
   }
 }
 
@@ -190,7 +325,14 @@ export class Blur {
   blur_plane(plane: number[]) {
     let out = new Array(this.width * this.height).fill(0);
     this.kernel.horizontal_pass(plane, this.temp, this.width);
-    this.kernel.vertical_pass_chunked(this.temp, out, this.width, this.height);
+    this.kernel.vertical_pass_chunked(
+      128,
+      32,
+      this.temp,
+      out,
+      this.width,
+      this.height
+    );
     return out;
   }
 

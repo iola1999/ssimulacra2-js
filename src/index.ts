@@ -99,7 +99,7 @@ async function compute_frame_ssimulacra2(
     );
     msssim.scales.push(new MsssimScale(avg_ssim, avg_edgediff));
   }
-  msssim.score();
+  return msssim.score();
 }
 
 function downscale_by_2(_in_data: LinearRgb) {
@@ -189,6 +189,24 @@ function image_multiply(
   }
 }
 
+function zip(...arrays: any[]) {
+  const length = Math.min(...arrays.map((array) => array.length));
+  return Array.from({ length }, (_, index) =>
+    arrays.map((array) => array[index])
+  );
+}
+
+(Array.prototype as any).chunks_exact = function (size: number) {
+  const length = Math.floor(this.length / size);
+  return Array.from({ length }, (_, index) =>
+    this.slice(index * size, index * size + size)
+  );
+};
+
+(Array.prototype as any).zip = function (...arrays: any[]) {
+  return zip(this, ...arrays);
+};
+
 function ssim_map(
   width: number,
   height: number,
@@ -198,8 +216,49 @@ function ssim_map(
   s22: ImageRgbPlanar,
   s12: ImageRgbPlanar
 ) {
-  // TODO
-  return new Array(6).fill(0);
+  const C2 = 0.0009;
+
+  const one_per_pixels = 1 / (width * height);
+  let plane_averages = new Array(6).fill(0);
+
+  for (let c = 0; c < 3; c++) {
+    let sum1 = [0, 0];
+    // TODO 确认此段逻辑是否一致
+    for (const [row_m1, [row_m2, [row_s11, [row_s22, row_s12]]]] of zip(
+      // @ts-ignore
+      m1[c].chunks_exact(width),
+      m2[c]
+        // @ts-ignore
+        .chunks_exact(width)
+        .zip(
+          s11[c]
+            // @ts-ignore
+            .chunks_exact(width)
+            // @ts-ignore
+            .zip(s22[c].chunks_exact(width).zip(s12[c].chunks_exact(width)))
+        )
+    )) {
+      for (let x = 0; x < width; x++) {
+        const mu1 = row_m1[x];
+        const mu2 = row_m2[x];
+        const mu11 = mu1 * mu1;
+        const mu22 = mu2 * mu2;
+        const mu12 = mu1 * mu2;
+        const mu_diff = mu1 - mu2;
+        const num_m = mu_diff - mu_diff * 1.0;
+        const num_s = 2 * (row_s12[x] - mu12) + C2;
+        const denom_s = row_s11[x] - mu11 + (row_s22[x] - mu22) + C2;
+        let d = 1.0 - (num_m * num_s) / denom_s;
+        d = Math.max(d, 0.0);
+        sum1[0] += d;
+        sum1[1] += d ** 4;
+      }
+    }
+    plane_averages[c * 2] = one_per_pixels * sum1[0];
+    plane_averages[c * 2 + 1] = (one_per_pixels * sum1[1]) ** 0.25;
+  }
+
+  return plane_averages;
 }
 
 function edge_diff_map(
@@ -210,7 +269,40 @@ function edge_diff_map(
   img2: ImageRgbPlanar,
   mu2: ImageRgbPlanar
 ) {
-  // TODO
+  const one_per_pixels = 1.0 / (width * height);
+  let plane_averages = new Array(12).fill(0);
+
+  // TODO 确认此段逻辑是否一致
+  for (let c = 0; c < 3; c++) {
+    let sum1 = [0, 0, 0, 0];
+    for (const [row1, [row2, [rowm1, rowm2]]] of zip(
+      // @ts-ignore
+      img1[c].chunks_exact(width),
+      // @ts-ignore
+      img2[c]
+        // @ts-ignore
+        .chunks_exact(width)
+        // @ts-ignore
+        .zip(mu1[c].chunks_exact(width).zip(mu2[c].chunks_exact(width)))
+    )) {
+      for (let x = 0; x < width; x++) {
+        const d1 =
+          (1.0 + Math.abs(row2[x] - rowm2[x])) /
+            (1.0 + Math.abs(row1[x] - rowm1[x])) -
+          1.0;
+        const artifact = Math.max(0, d1);
+        sum1[0] += artifact;
+        sum1[1] += artifact ** 4;
+        const detail_lost = Math.max(0, -d1);
+        sum1[2] += detail_lost;
+        sum1[3] += detail_lost ** 4;
+      }
+    }
+    plane_averages[c * 4] = one_per_pixels * sum1[0];
+    plane_averages[c * 4 + 1] = (one_per_pixels * sum1[1]) ** 0.25;
+    plane_averages[c * 4 + 2] = one_per_pixels * sum1[2];
+    plane_averages[c * 4 + 3] = (one_per_pixels * sum1[3]) ** 0.25;
+  }
   return new Array(12).fill(0);
 }
 
