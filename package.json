@@ -1,6 +1,6 @@
 {
   "name": "ssimulacra2-js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "ssimulacra2-js",
   "keywords": [],
   "main": "dist/bundle.umd.js",
