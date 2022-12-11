@@ -65,7 +65,7 @@ export class RecursiveGaussian {
 
     // (55)
     const gammaMatrix3 = new Matrix3();
-    // TODO 确认效果一致？
+    // TODO 确认效果一致？可能应该纵向写才对
     let gamma = gammaMatrix3.set(
       1.0,
       radius * radius - SIGMA * SIGMA,
