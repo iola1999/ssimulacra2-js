@@ -6,6 +6,9 @@ export interface ImageInfo {
     width: number;
     height: number;
   } & Partial<sharp.OutputInfo>;
+  // is normalized to range 0~1
+  normalized?: boolean;
+  type?: "sRgb" | "linearRgb";
 }
 
 export type ImageRgbPlanar = [number[], number[], number[]];

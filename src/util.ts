@@ -8,7 +8,7 @@ export async function readImage(path: string) {
 const SRGB_ALPHA = 1.055_010_7;
 const SRGB_BETA = 0.003_041_282_5;
 
-function someTransfer(x: number) {
+export function srgbToLinear(x: number) {
   x = Math.max(0, x);
   if (x < 12.92 * SRGB_BETA) {
     return x / 12.92;
@@ -17,16 +17,7 @@ function someTransfer(x: number) {
   }
 }
 
-export function srgbToLinear(r: number, g: number, b: number) {
-  // 将 RGB 值转换为 0 到 1 之间的浮点数
-  r /= 255;
-  g /= 255;
-  b /= 255;
-
-  return [someTransfer(r), someTransfer(g), someTransfer(b)];
-}
-
-function transformPrimariesBT709(r: number, g: number, b: number) {
+export function transformPrimariesBT709(r: number, g: number, b: number) {
   // 默认都是的话就不转了 yuvrgb 的实现：
   //   if in_primaries == out_primaries {
   //     return Ok(input);

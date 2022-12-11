@@ -23,9 +23,9 @@ async function compute_frame_ssimulacra2(
     throw new Error("Images must be at least 8x8 pixels");
 
   const mul: ImageRgbPlanar = [
-    new Array(width * height),
-    new Array(width * height),
-    new Array(width * height),
+    new Array(width * height).fill(0),
+    new Array(width * height).fill(0),
+    new Array(width * height).fill(0),
   ];
 
   const blur = new Blur(width, height);
@@ -43,13 +43,15 @@ async function compute_frame_ssimulacra2(
       mul[index].length = width * height;
     }
     blur.shrink_to(width, height);
-    // 可能不用复制？
+    // TODO 可能不用复制
     let img1Clone = new LinearRgb({
       data: img1.data.flat(),
       info: {
         width: img1.width,
         height: img1.height,
       },
+      normalized: true,
+      type: "linearRgb",
     });
     let img2Clone = new LinearRgb({
       data: img2.data.flat(),
@@ -57,9 +59,12 @@ async function compute_frame_ssimulacra2(
         width: img2.width,
         height: img2.height,
       },
+      normalized: true,
+      type: "linearRgb",
     });
 
     // 可能不用接收返回值？
+    // TODO 此处 rust 调用方法内看到的值跟入参不一样？
     img1Clone = make_positive_xyb(img1Clone);
     img2Clone = make_positive_xyb(img2Clone);
 
@@ -141,6 +146,8 @@ function downscale_by_2(_in_data: LinearRgb) {
       width: out_w,
       height: out_h,
     },
+    normalized: true,
+    type: "linearRgb",
   });
 }
 
