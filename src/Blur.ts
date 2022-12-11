@@ -120,7 +120,7 @@ export class RecursiveGaussian {
       mul_in[4 * i] = n2[i];
       mul_in[4 * i + 1] = -d1[i] * n2[i];
       mul_in[4 * i + 2] = d_2 * n2[i] - n2[i];
-      mul_in[4 * i + 3] = -d_2 * d1[i] * n2[i] - 2.0 * d1[i] * n2[i];
+      mul_in[4 * i + 3] = -d_2 * d1[i] * n2[i] + 2.0 * d1[i] * n2[i];
     }
 
     this.radius = radius;
@@ -137,11 +137,15 @@ export class RecursiveGaussian {
     }
 
     for (let i = 0; i < input.length; i += width) {
-      this.horizontal_row(
+      const out = this.horizontal_row(
         input.slice(i, i + width),
         output.slice(i, i + width),
         width
       );
+      // slice 是拷贝了一份，没有修改原地址。这里需要把结果拷贝回去
+      for (let index = 0; index < out.length; index++) {
+        output[i + index] = out[index];
+      }
     }
   }
   horizontal_row(input: number[], output: number[], width: number) {
@@ -198,6 +202,8 @@ export class RecursiveGaussian {
 
       n += 1;
     }
+    // js slice 是拷贝了一份出来，不是原地址修改
+    return output;
   }
 
   vertical_pass_chunked(
@@ -216,17 +222,47 @@ export class RecursiveGaussian {
 
     let x = 0;
     while (x + J <= width) {
-      this.vertical_pass(J, input.slice(x), output.slice(x), width, height);
+      const out = this.vertical_pass(
+        J,
+        input.slice(x),
+        output.slice(x),
+        width,
+        height
+      );
+      // slice 是拷贝了一份，没有修改原地址。这里需要把结果拷贝回去
+      for (let index = 0; index < out.length; index++) {
+        output[x + index] = out[index];
+      }
       x += J;
     }
 
     while (x + K <= width) {
-      this.vertical_pass(K, input.slice(x), output.slice(x), width, height);
+      const out = this.vertical_pass(
+        K,
+        input.slice(x),
+        output.slice(x),
+        width,
+        height
+      );
+      // slice 是拷贝了一份，没有修改原地址。这里需要把结果拷贝回去
+      for (let index = 0; index < out.length; index++) {
+        output[x + index] = out[index];
+      }
       x += K;
     }
 
     while (x < width) {
-      this.vertical_pass(1, input.slice(x), output.slice(x), width, height);
+      const out = this.vertical_pass(
+        1,
+        input.slice(x),
+        output.slice(x),
+        width,
+        height
+      );
+      // slice 是拷贝了一份，没有修改原地址。这里需要把结果拷贝回去
+      for (let index = 0; index < out.length; index++) {
+        output[x + index] = out[index];
+      }
       x += 1;
     }
   }
@@ -300,6 +336,8 @@ export class RecursiveGaussian {
 
       n++;
     }
+    // js slice 是拷贝一份，不是修改源地址，此处要修复
+    return output;
   }
 }
 

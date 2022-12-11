@@ -1,5 +1,5 @@
 import { Blur } from "./Blur";
-import { LinearRgb } from "./LinearRgb";
+import { TypedRgb } from "./TypedRgb";
 import { Msssim, MsssimScale } from "./Mssim";
 import { readImage } from "./util";
 import { ImageRgbPlanar } from "./type";
@@ -12,8 +12,8 @@ async function compute_frame_ssimulacra2(
 ) {
   const imageInfo1 = await readImage(sourceImgPath1);
   const imageInfo2 = await readImage(sourceImgPath2);
-  let img1 = new LinearRgb(imageInfo1);
-  let img2 = new LinearRgb(imageInfo2);
+  let img1 = new TypedRgb(imageInfo1);
+  let img2 = new TypedRgb(imageInfo2);
   if (img1.width !== img2.width || img1.height !== img2.height)
     throw new Error(
       "Source and distorted image width and height must be equal"
@@ -43,47 +43,50 @@ async function compute_frame_ssimulacra2(
       mul[index].length = width * height;
     }
     blur.shrink_to(width, height);
-    // TODO 可能不用复制
-    let img1Clone = new LinearRgb({
-      data: img1.data.flat(),
-      info: {
-        width: img1.width,
-        height: img1.height,
+    let img1Clone = new TypedRgb(
+      {
+        data: img1.data.flat(),
+        info: {
+          width: img1.width,
+          height: img1.height,
+        },
+        normalized: true,
+        inputDataType: "linearRgb",
       },
-      normalized: true,
-      type: "linearRgb",
-    });
-    let img2Clone = new LinearRgb({
-      data: img2.data.flat(),
-      info: {
-        width: img2.width,
-        height: img2.height,
+      "xyb"
+    );
+    let img2Clone = new TypedRgb(
+      {
+        data: img2.data.flat(),
+        info: {
+          width: img2.width,
+          height: img2.height,
+        },
+        normalized: true,
+        inputDataType: "linearRgb",
       },
-      normalized: true,
-      type: "linearRgb",
-    });
+      "xyb"
+    );
 
-    // 可能不用接收返回值？
-    // TODO 此处 rust 调用方法内看到的值跟入参不一样？
-    img1Clone = make_positive_xyb(img1Clone);
-    img2Clone = make_positive_xyb(img2Clone);
+    make_positive_xyb(img1Clone);
+    make_positive_xyb(img2Clone);
 
     // SSIMULACRA2 works with the data in a planar format,
     // so we need to convert to that.
-    const img1Planar = xyb_to_planar(img1Clone);
-    const img2Planar = xyb_to_planar(img2Clone);
+    const img1_planar = xyb_to_planar(img1Clone);
+    const img2_planar = xyb_to_planar(img2Clone);
 
-    image_multiply(img1Planar, img1Planar, mul);
+    image_multiply(img1_planar, img1_planar, mul);
     let sigma1_sq = blur.blur(mul);
 
-    image_multiply(img2Planar, img2Planar, mul);
+    image_multiply(img2_planar, img2_planar, mul);
     let sigma2_sq = blur.blur(mul);
 
-    image_multiply(img1Planar, img2Planar, mul);
+    image_multiply(img1_planar, img2_planar, mul);
     let sigma12 = blur.blur(mul);
 
-    let mu1 = blur.blur(img1Planar);
-    let mu2 = blur.blur(img1Planar);
+    let mu1 = blur.blur(img1_planar);
+    let mu2 = blur.blur(img1_planar);
 
     let avg_ssim = ssim_map(
       width,
@@ -97,9 +100,9 @@ async function compute_frame_ssimulacra2(
     let avg_edgediff = edge_diff_map(
       width,
       height,
-      img1Planar,
+      img1_planar,
       mu1,
-      img2Planar,
+      img2_planar,
       mu2
     );
     msssim.scales.push(new MsssimScale(avg_ssim, avg_edgediff));
@@ -107,7 +110,7 @@ async function compute_frame_ssimulacra2(
   return msssim.score();
 }
 
-function downscale_by_2(_in_data: LinearRgb) {
+function downscale_by_2(_in_data: TypedRgb) {
   const SCALE = 2;
   const in_w = _in_data.width;
   const in_h = _in_data.height;
@@ -140,28 +143,30 @@ function downscale_by_2(_in_data: LinearRgb) {
     }
   }
 
-  return new LinearRgb({
-    data: out_data.flat(),
-    info: {
-      width: out_w,
-      height: out_h,
+  return new TypedRgb(
+    {
+      data: out_data.flat(),
+      info: {
+        width: out_w,
+        height: out_h,
+      },
+      normalized: true,
+      inputDataType: "linearRgb",
     },
-    normalized: true,
-    type: "linearRgb",
-  });
+    "xyb"
+  );
 }
 
-function make_positive_xyb(xyb: LinearRgb) {
+function make_positive_xyb(xyb: TypedRgb) {
   for (let index = 0; index < xyb.data.length; index++) {
     xyb.data[index][2] += 1.1 - xyb.data[index][1];
     xyb.data[index][0] += 0.5;
     xyb.data[index][1] += 0.05;
   }
-  return xyb;
 }
 
 // 将每个像素的 rgb 分别存到三个数组
-function xyb_to_planar(xyb: LinearRgb) {
+function xyb_to_planar(xyb: TypedRgb) {
   const out1 = Array<number>(xyb.width * xyb.height).fill(0);
   const out2 = Array<number>(xyb.width * xyb.height).fill(0);
   const out3 = Array<number>(xyb.width * xyb.height).fill(0);
@@ -251,8 +256,9 @@ function ssim_map(
         const mu11 = mu1 * mu1;
         const mu22 = mu2 * mu2;
         const mu12 = mu1 * mu2;
+        // 此处有偏差
         const mu_diff = mu1 - mu2;
-        const num_m = mu_diff - mu_diff * 1.0;
+        const num_m = mu_diff * -mu_diff + 1.0;
         const num_s = 2 * (row_s12[x] - mu12) + C2;
         const denom_s = row_s11[x] - mu11 + (row_s22[x] - mu22) + C2;
         let d = 1.0 - (num_m * num_s) / denom_s;
@@ -261,6 +267,7 @@ function ssim_map(
         sum1[1] += d ** 4;
       }
     }
+    // TODO 值偏差较大
     plane_averages[c * 2] = one_per_pixels * sum1[0];
     plane_averages[c * 2 + 1] = (one_per_pixels * sum1[1]) ** 0.25;
   }
@@ -305,12 +312,13 @@ function edge_diff_map(
         sum1[3] += detail_lost ** 4;
       }
     }
+    // TODO 值偏差较大
     plane_averages[c * 4] = one_per_pixels * sum1[0];
     plane_averages[c * 4 + 1] = (one_per_pixels * sum1[1]) ** 0.25;
     plane_averages[c * 4 + 2] = one_per_pixels * sum1[2];
     plane_averages[c * 4 + 3] = (one_per_pixels * sum1[3]) ** 0.25;
   }
-  return new Array(12).fill(0);
+  return plane_averages;
 }
 
 export { compute_frame_ssimulacra2 };
