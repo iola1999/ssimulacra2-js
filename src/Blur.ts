@@ -65,15 +65,15 @@ export class RecursiveGaussian {
 
     // (55)
     const gammaMatrix3 = new Matrix3();
-    // TODO 确认效果一致？可能应该纵向写才对
+    // 3x1 矩阵写法
     let gamma = gammaMatrix3.set(
       1.0,
+      0,
+      0,
       radius * radius - SIGMA * SIGMA,
+      0,
+      0,
       zeta_15 * rho[0] + zeta_35 * rho[1] + rho[2],
-      0,
-      0,
-      0,
-      0,
       0,
       0
     );
@@ -111,16 +111,16 @@ export class RecursiveGaussian {
       // Then expand(o3) and gather terms for p(prev), pp(prev2) etc.
       mul_prev[4 * i] = -d1[i];
       mul_prev[4 * i + 1] = d_2 - 1.0;
-      mul_prev[4 * i + 2] = d_2 * d1[i] - 2.0 * d1[i];
+      mul_prev[4 * i + 2] = -d_2 * d1[i] + 2.0 * d1[i];
       mul_prev[4 * i + 3] = d_2 * d_2 - 3.0 * d_2 + 1.0;
       mul_prev2[4 * i] = -1.0;
       mul_prev2[4 * i + 1] = d1[i];
-      mul_prev2[4 * i + 2] = d_2 - 1.0;
+      mul_prev2[4 * i + 2] = -d_2 + 1.0;
       mul_prev2[4 * i + 3] = d_2 * d1[i] - 2.0 * d1[i];
       mul_in[4 * i] = n2[i];
-      mul_in[4 * i + 1] = d1[i] * n2[i];
+      mul_in[4 * i + 1] = -d1[i] * n2[i];
       mul_in[4 * i + 2] = d_2 * n2[i] - n2[i];
-      mul_in[4 * i + 3] = d_2 * d1[i] * n2[i] - 2.0 * d1[i] * n2[i];
+      mul_in[4 * i + 3] = -d_2 * d1[i] * n2[i] - 2.0 * d1[i] * n2[i];
     }
 
     this.radius = radius;
