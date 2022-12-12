@@ -16,10 +16,11 @@ export class TypedRgb {
       normalized = false,
       inputDataType = "sRgb",
     } = imageInfo;
-    if (data.length !== info.width * info.height * 3)
+    const { width, height, channels = 3 } = info;
+    if (data.length !== width * height * channels)
       throw new Error("size not match");
     let linearResult: Array<[number, number, number]> = [];
-    for (let i = 0; i < data.length; i += 3) {
+    for (let i = 0; i < data.length; i += channels) {
       // 0~255 or 0~1
       let [r, g, b] = [data[i], data[i + 1], data[i + 2]];
       if (!normalized) {
