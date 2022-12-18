@@ -321,4 +321,6 @@ function edge_diff_map(
   return plane_averages;
 }
 
-export { compute_frame_ssimulacra2 };
+import { compute_by_wasm } from "./wasm";
+
+export { compute_frame_ssimulacra2, compute_by_wasm };
