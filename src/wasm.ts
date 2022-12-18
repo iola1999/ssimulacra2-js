@@ -22,6 +22,8 @@ async function setImageBuffer(imagePath: string, wasmModule: InitOutput) {
     wasmU8ca[index + 1] = data[i + 1];
     wasmU8ca[index + 2] = data[i + 2];
   }
+  // FIXME: 与 Chrome 上不同，此处内存似乎不是连续的？
+  // print_buffer(imagePath);
 
   return imageInfo.info;
 }
@@ -32,6 +34,7 @@ async function compute_by_wasm(sourceImgPath1: string, sourceImgPath2: string) {
     path.resolve("node_modules/calc-s2-rust/calc_s2_rust_bg.wasm")
   );
   const wasmModule = await init(wasmBuffer);
+  wasmModule.set_wasm_panic_hook();
 
   const imageInfo1 = await setImageBuffer(sourceImgPath1, wasmModule);
   await setImageBuffer(sourceImgPath2, wasmModule);

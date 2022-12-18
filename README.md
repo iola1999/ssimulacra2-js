@@ -1,6 +1,6 @@
 # ssimulacra2-js
 
-使用 js 实现 ssimulacra2 计算
+使用 js 实现 [ssimulacra2](https://github.com/cloudinary/ssimulacra2) 计算。
 
 包含两种实现:
 
