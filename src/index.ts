@@ -43,7 +43,7 @@ async function compute_frame_ssimulacra2(
       mul[index].length = width * height;
     }
     blur.shrink_to(width, height);
-    let img1Clone = new TypedRgb(
+    const img1Clone = new TypedRgb(
       {
         data: img1.data.flat(),
         info: {
@@ -55,7 +55,7 @@ async function compute_frame_ssimulacra2(
       },
       "xyb"
     );
-    let img2Clone = new TypedRgb(
+    const img2Clone = new TypedRgb(
       {
         data: img2.data.flat(),
         info: {
@@ -77,18 +77,18 @@ async function compute_frame_ssimulacra2(
     const img2_planar = xyb_to_planar(img2Clone);
 
     image_multiply(img1_planar, img1_planar, mul);
-    let sigma1_sq = blur.blur(mul);
+    const sigma1_sq = blur.blur(mul);
 
     image_multiply(img2_planar, img2_planar, mul);
-    let sigma2_sq = blur.blur(mul);
+    const sigma2_sq = blur.blur(mul);
 
     image_multiply(img1_planar, img2_planar, mul);
-    let sigma12 = blur.blur(mul);
+    const sigma12 = blur.blur(mul);
 
-    let mu1 = blur.blur(img1_planar);
-    let mu2 = blur.blur(img1_planar);
+    const mu1 = blur.blur(img1_planar);
+    const mu2 = blur.blur(img1_planar);
 
-    let avg_ssim = ssim_map(
+    const avg_ssim = ssim_map(
       width,
       height,
       mu1,
@@ -97,7 +97,7 @@ async function compute_frame_ssimulacra2(
       sigma2_sq,
       sigma12
     );
-    let avg_edgediff = edge_diff_map(
+    const avg_edgediff = edge_diff_map(
       width,
       height,
       img1_planar,
@@ -122,7 +122,7 @@ function downscale_by_2(_in_data: TypedRgb) {
   }
   const normalize = 1 / (SCALE * SCALE);
 
-  let in_data = _in_data.data;
+  const in_data = _in_data.data;
 
   for (let oy = 0; oy < out_h; oy++) {
     for (let ox = 0; ox < out_w; ox++) {
@@ -231,10 +231,10 @@ function ssim_map(
   const C2 = 0.0009;
 
   const one_per_pixels = 1 / (width * height);
-  let plane_averages = new Array(6).fill(0);
+  const plane_averages = new Array(6).fill(0);
 
   for (let c = 0; c < 3; c++) {
-    let sum1 = [0, 0];
+    const sum1 = [0, 0];
     // TODO 确认此段逻辑是否一致
     for (const [row_m1, [row_m2, [row_s11, [row_s22, row_s12]]]] of zip(
       // @ts-ignore
@@ -284,11 +284,11 @@ function edge_diff_map(
   mu2: ImageRgbPlanar
 ) {
   const one_per_pixels = 1.0 / (width * height);
-  let plane_averages = new Array(12).fill(0);
+  const plane_averages = new Array(12).fill(0);
 
   // TODO 确认此段逻辑是否一致
   for (let c = 0; c < 3; c++) {
-    let sum1 = [0, 0, 0, 0];
+    const sum1 = [0, 0, 0, 0];
     for (const [row1, [row2, [rowm1, rowm2]]] of zip(
       // @ts-ignore
       img1[c].chunks_exact(width),
